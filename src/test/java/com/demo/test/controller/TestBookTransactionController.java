@@ -1,13 +1,15 @@
 package com.demo.test.controller;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -37,8 +39,8 @@ class TestBookTransactionController {
 
 	private BookTransaction bookTransactionTestObj;
 
-	@Test
-	public void testAddBookTransactionEntry() throws Exception {
+	@BeforeEach
+	public void init() {
 		List<BookEntry> bookEntryList = new ArrayList<>();
 
 		BookEntry firstRecord = new BookEntry();
@@ -71,11 +73,27 @@ class TestBookTransactionController {
 		bookTransactionTestObj.setUnit_id(6);
 		bookTransactionTestObj.setBookEntry(bookEntryList);
 
-		when(bookTransactionService.save(bookTransactionTestObj)).thenReturn(bookTransactionTestObj);
+	}
+
+	@Test
+	public void testAddBookTransactionEntry() throws Exception {
+			when(bookTransactionService.save(bookTransactionTestObj)).thenReturn(bookTransactionTestObj);
 
 		mockMvc.perform(post("/addBookTransactionRecord").contentType(MediaType.APPLICATION_JSON)
 				.content(new ObjectMapper().writeValueAsString(bookTransactionTestObj))).andExpect(status().isOk());
 
 	}
+	
+	@Test
+	public void testGetRecordById() throws Exception
+	{
+		when(bookTransactionService.getSingleRecordById(1)).thenReturn(bookTransactionTestObj);
+		
+		mockMvc.perform(get("/getDataById/{bookingId}",1)
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.building_id").value(20));
+	}
+	
 
 }
