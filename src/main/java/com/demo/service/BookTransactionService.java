@@ -1,8 +1,15 @@
 package com.demo.service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,6 +20,8 @@ import com.demo.entity.BookTransaction;
 import com.demo.entity.NatureEnum;
 import com.demo.repo.BookEntryRepo;
 import com.demo.repo.BookTransactionRepo;
+
+import jakarta.persistence.Column;
 
 @Service
 public class BookTransactionService {
@@ -49,57 +58,35 @@ public class BookTransactionService {
 			List<BookEntry> bookEntriesBackendList = bookTransactionBackendRecord.getBookEntry();
 			List<BookEntry> bookEntriesFrontendList = record.getBookEntry();
 
+			boolean found = false;
+			int bookEntriesCount = 0;
 			List<BookEntry> BookEntryList = new ArrayList<>();
 
+			boolean addAllNewRecords = false;
 			for (BookEntry dbList : bookEntriesBackendList) {
-				boolean found = false;
-				
+				found = false;
+
 				for (BookEntry uiList : bookEntriesFrontendList) {
+
+					// update Existing book Entry Record
 					if (dbList.getBook_entry_id() == uiList.getBook_entry_id()) {
 						found = true;
+						bookEntriesCount++;
+						UpdateExistingBookEntryRecord(dbList, uiList);
 
-						dbList.setGl_account(uiList.getGl_account());
-						dbList.setNature(uiList.getNature());
-
-						if (uiList.getNature() == NatureEnum.CREDIT) {
-
-							dbList.setCredit_amt(uiList.getCredit_amt());
-							dbList.setDebit_amt(0);
-						}
-						if (uiList.getNature() == NatureEnum.DEBIT) {
-							dbList.setDebit_amt(uiList.getDebit_amt());
-							dbList.setCredit_amt(0);
-						}
-					}
-					// delete a record
-					if (found == false) {
-						System.out.println(dbList.getBook_entry_id() + " " + found + "not found");
-						dbList.setDeleted(true);
-						
 					}
 
-					
+					// add to existing record
+					if (uiList.getBook_entry_id() == 0 && addAllNewRecords == false) {
+						AddNewBookEntryToExistingBookTransaction(uiList, BookEntryList);
+						addAllNewRecords = true;
+						bookEntriesCount++;
+					}
 
 				}
-			}
-			// add subrecord into existing record
-			for (BookEntry uiList : bookEntriesFrontendList) {
-				boolean isNew = false;
-				for (BookEntry dbList : bookEntriesBackendList) {
-					if (uiList.getBook_entry_id() == 0) {
-						isNew = true;
-					}
-				}
-				if (isNew) {
-					BookEntry bookEntry = new BookEntry();
-					bookEntry.setCredit_amt(uiList.getCredit_amt());
-					bookEntry.setDebit_amt(uiList.getDebit_amt());
-					bookEntry.setGl_account(uiList.getGl_account());
-					bookEntry.setNature(uiList.getNature());
-					bookEntry.setDeleted(false);
-					BookEntryList.add(bookEntry);
-					isNew = false;
-				}
+				// delete
+				CheckIsAnyTransactionEntryDelete(found, dbList, bookEntriesCount, bookTransactionBackendRecord);
+
 			}
 
 			bookEntriesBackendList.addAll(BookEntryList);
@@ -113,7 +100,46 @@ public class BookTransactionService {
 
 	}
 
-	//get single  record
+	private void UpdateExistingBookEntryRecord(BookEntry dbList, BookEntry uiList) {
+		dbList.setGl_account(uiList.getGl_account());
+		dbList.setNature(uiList.getNature());
+
+		if (uiList.getNature() == NatureEnum.CREDIT) {
+
+			dbList.setCredit_amt(uiList.getCredit_amt());
+			dbList.setDebit_amt(0);
+		}
+		if (uiList.getNature() == NatureEnum.DEBIT) {
+			dbList.setDebit_amt(uiList.getDebit_amt());
+			dbList.setCredit_amt(0);
+		}
+
+	}
+
+	private void AddNewBookEntryToExistingBookTransaction(BookEntry uiList, List<BookEntry> BookEntryList) {
+
+		BookEntry bookEntry = new BookEntry();
+		bookEntry.setCredit_amt(uiList.getCredit_amt());
+		bookEntry.setDebit_amt(uiList.getDebit_amt());
+		bookEntry.setGl_account(uiList.getGl_account());
+		bookEntry.setNature(uiList.getNature());
+		bookEntry.setDeleted(false);
+		BookEntryList.add(bookEntry);
+	}
+
+	private void CheckIsAnyTransactionEntryDelete(boolean found, BookEntry dbList, int bookEntriesCount,
+			BookTransaction bookTransactionBackendRecord) {
+		if (found == false) {
+			dbList.setDeleted(true);
+
+			if (bookEntriesCount == 0) {
+				bookTransactionBackendRecord.setDeleted(true);
+			}
+		}
+
+	}
+
+	// get single record
 	public BookTransaction getSingleRecordById(int bookTransactionId) {
 
 		Optional<BookTransaction> bookTransaction = this.bookTransactionRepo.findById(bookTransactionId);
@@ -135,7 +161,6 @@ public class BookTransactionService {
 			}
 
 		}
-		// BookTransaction bookTrans=bookTransaction.get();
 
 		return null;
 	}

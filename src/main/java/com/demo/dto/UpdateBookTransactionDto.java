@@ -1,6 +1,7 @@
 package com.demo.dto;
 
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 
 import com.demo.entity.BookEntry;
@@ -11,7 +12,7 @@ public class UpdateBookTransactionDto {
 	private int landlord_id;
 	private int building_id;
 	private int unit_id;
-	private LocalDate date;
+	private Date date;
 	private String description;
 	private String book_entry_name;
 	
@@ -28,7 +29,7 @@ public class UpdateBookTransactionDto {
 
 
 	public UpdateBookTransactionDto(int book_transaction_id, int landlord_id, int building_id, int unit_id,
-			LocalDate date, String description, String book_entry_name, List<BookEntry> bookEntry) {
+			Date date, String description, String book_entry_name, List<BookEntry> bookEntry) {
 		super();
 		this.book_transaction_id = book_transaction_id;
 		this.landlord_id = landlord_id;
@@ -90,13 +91,13 @@ public class UpdateBookTransactionDto {
 
 
 
-	public LocalDate getDate() {
+	public Date getDate() {
 		return date;
 	}
 
 
 
-	public void setDate(LocalDate date) {
+	public void setDate(Date date) {
 		this.date = date;
 	}
 

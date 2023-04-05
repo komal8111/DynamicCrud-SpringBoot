@@ -1,9 +1,8 @@
 package com.demo.entity;
 
-import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 
-import jakarta.annotation.Nonnull;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,7 +22,9 @@ public class BookTransaction {
 	private int landlord_id;
 	private int building_id;
 	private int unit_id;
-	private LocalDate date;
+	
+	
+	private Date date;
 	private String description;
 	private String book_entry_name;
 	
@@ -44,7 +45,7 @@ public class BookTransaction {
 
 
 
-	public BookTransaction( int landlord_id, int building_id, int unit_id, LocalDate date,
+	public BookTransaction( int landlord_id, int building_id, int unit_id, Date date,
 			String description, String book_entry_name, List<BookEntry> bookEntry) {
 		super();
 	
@@ -107,14 +108,16 @@ public class BookTransaction {
 
 
 
-	public LocalDate getDate() {
-		return date;
+	public Date getDate() {
+		Date d=new Date();
+		return d;
 	}
 
 
 
-	public void setDate(LocalDate date) {
-		this.date = date;
+	public void setDate(Date date) {
+		Date d=new Date();
+		this.date = d;
 	}
 
 
@@ -175,6 +178,13 @@ public class BookTransaction {
 				+ bookEntry + "]";
 	}
 
+
+
+
+
+
+
+	
 
 
 	
