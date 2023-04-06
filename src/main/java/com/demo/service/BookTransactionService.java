@@ -43,11 +43,11 @@ public class BookTransactionService {
 
 	public void updateExistingRecord(UpdateBookTransactionDto record) {
 
-		Optional<BookTransaction> bookTransactionRecord = bookTransactionRepo.findById(record.getBook_transaction_id());
+		BookTransaction bookTransactionRecord = getSingleRecordById(record.getBook_transaction_id());
 
 		// update existing Record
-		if (bookTransactionRecord.isPresent()) {
-			BookTransaction bookTransactionBackendRecord = bookTransactionRecord.get();
+		if (bookTransactionRecord != null) {
+			BookTransaction bookTransactionBackendRecord = bookTransactionRecord;
 			bookTransactionBackendRecord.setLandlord_id(record.getLandlord_id());
 			bookTransactionBackendRecord.setBuilding_id(record.getBuilding_id());
 			bookTransactionBackendRecord.setUnit_id(record.getUnit_id());
@@ -55,41 +55,55 @@ public class BookTransactionService {
 			bookTransactionBackendRecord.setDescription(record.getDescription());
 			bookTransactionBackendRecord.setBook_entry_name(record.getBook_entry_name());
 
-			List<BookEntry> bookEntriesBackendList = bookTransactionBackendRecord.getBookEntry();
-			List<BookEntry> bookEntriesFrontendList = record.getBookEntry();
+			List<BookEntry> allBookEntriesFromDb = bookTransactionBackendRecord.getBookEntry();
+			List<BookEntry> allBookEntries = record.getBookEntry();
 
-			boolean found = false;
-			int bookEntriesCount = 0;
-			List<BookEntry> BookEntryList = new ArrayList<>();
+			// boolean found = false;
+			// int bookEntriesCount = 0;
+
+			List<BookEntry> bookEntryList = new ArrayList<>();
 
 			boolean addAllNewRecords = false;
-			for (BookEntry dbList : bookEntriesBackendList) {
-				found = false;
 
-				for (BookEntry uiList : bookEntriesFrontendList) {
+			System.out.println(allBookEntries.size() + "--------------" + allBookEntriesFromDb.size());
 
-					// update Existing book Entry Record
-					if (dbList.getBook_entry_id() == uiList.getBook_entry_id()) {
-						found = true;
-						bookEntriesCount++;
-						UpdateExistingBookEntryRecord(dbList, uiList);
+			int bookEntryIndex = 0;
+
+			BookEntry bookEntryFromDbByIndex = allBookEntriesFromDb.get(bookEntryIndex);
+
+			for (BookEntry updatedBookEntry : allBookEntries) {
+
+				// update
+				if (bookEntryIndex < allBookEntriesFromDb.size()) {
+					int existingbookEntryId = allBookEntriesFromDb.get(bookEntryIndex).getBook_entry_id();
+
+					if (updatedBookEntry.getBook_entry_id() == existingbookEntryId) {
+
+						// found = true;
+						// bookEntriesCount++;
+						UpdateExistingBookEntryRecord(allBookEntriesFromDb, bookEntryFromDbByIndex, existingbookEntryId,
+								bookEntryIndex, updatedBookEntry);
 
 					}
+				}
 
-					// add to existing record
-					if (uiList.getBook_entry_id() == 0 && addAllNewRecords == false) {
-						AddNewBookEntryToExistingBookTransaction(uiList, BookEntryList);
-						addAllNewRecords = true;
-						bookEntriesCount++;
-					}
+				// add
+				if (allBookEntries.size() > allBookEntriesFromDb.size()) {
+
+					AddNewBookEntryToExistingBookTransaction(updatedBookEntry, bookEntryList);
+					// addAllNewRecords = true;
+					// bookEntriesCount++;
 
 				}
-				// delete
-				CheckIsAnyTransactionEntryDelete(found, dbList, bookEntriesCount, bookTransactionBackendRecord);
+
+				bookEntryIndex++;
 
 			}
 
-			bookEntriesBackendList.addAll(BookEntryList);
+			// delete
+			// checkBookEntryIsDeleted(allBookEntriesFromDb, allBookEntries);
+
+			allBookEntriesFromDb.addAll(bookEntryList);
 			bookTransactionRepo.save(bookTransactionBackendRecord);
 
 		}
@@ -100,43 +114,55 @@ public class BookTransactionService {
 
 	}
 
-	private void UpdateExistingBookEntryRecord(BookEntry dbList, BookEntry uiList) {
-		dbList.setGl_account(uiList.getGl_account());
-		dbList.setNature(uiList.getNature());
+//	private void checkBookEntryIsDeleted(List<BookEntry> allBookEntriesFromDb, List<BookEntry> allBookEntries) {
+//		// for (BookEntry bookEntryFromDb : allBookEntriesFromDb) {
+//		
+//
+//		BookEntry updatedbookEntryByIndex = allBookEntries.get(bookEntryIndex);
+//		for (BookEntry bookEntry : allBookEntriesFromDb) {
+//			if (bookEntry.getBook_entry_id() == updatedbookEntryByIndex.getBook_entry_id()) {
+//				System.out.println(bookEntry.getBook_entry_id() + "  Yes  " + updatedbookEntryByIndex.getBook_entry_id());
+//			} else {
+//				System.out.println(bookEntry.getBook_entry_id() + "  No  " + updatedbookEntryByIndex.getBook_entry_id());
+//
+//			}
+//		}
+//		bookEntryIndex++;
 
-		if (uiList.getNature() == NatureEnum.CREDIT) {
+//	}
 
-			dbList.setCredit_amt(uiList.getCredit_amt());
-			dbList.setDebit_amt(0);
+	// update
+	private void UpdateExistingBookEntryRecord(List<BookEntry> allBookEntriesFromDb, BookEntry bookEntryFromDbByIndex,
+			int ExistingbookEntryId, int bookEntryIndex, BookEntry updatedBookEntry) {
+
+		bookEntryFromDbByIndex = allBookEntriesFromDb.get(bookEntryIndex);
+		System.out.println(bookEntryFromDbByIndex);
+		bookEntryFromDbByIndex.setGl_account(updatedBookEntry.getGl_account());
+		bookEntryFromDbByIndex.setNature(updatedBookEntry.getNature());
+
+		if (updatedBookEntry.getNature() == NatureEnum.CREDIT) {
+
+			bookEntryFromDbByIndex.setCredit_amt(updatedBookEntry.getCredit_amt());
+			bookEntryFromDbByIndex.setDebit_amt(0);
 		}
-		if (uiList.getNature() == NatureEnum.DEBIT) {
-			dbList.setDebit_amt(uiList.getDebit_amt());
-			dbList.setCredit_amt(0);
+		if (updatedBookEntry.getNature() == NatureEnum.DEBIT) {
+			bookEntryFromDbByIndex.setDebit_amt(updatedBookEntry.getDebit_amt());
+			bookEntryFromDbByIndex.setCredit_amt(0);
 		}
 
 	}
 
-	private void AddNewBookEntryToExistingBookTransaction(BookEntry uiList, List<BookEntry> BookEntryList) {
-
-		BookEntry bookEntry = new BookEntry();
-		bookEntry.setCredit_amt(uiList.getCredit_amt());
-		bookEntry.setDebit_amt(uiList.getDebit_amt());
-		bookEntry.setGl_account(uiList.getGl_account());
-		bookEntry.setNature(uiList.getNature());
-		bookEntry.setDeleted(false);
-		BookEntryList.add(bookEntry);
-	}
-
-	private void CheckIsAnyTransactionEntryDelete(boolean found, BookEntry dbList, int bookEntriesCount,
-			BookTransaction bookTransactionBackendRecord) {
-		if (found == false) {
-			dbList.setDeleted(true);
-
-			if (bookEntriesCount == 0) {
-				bookTransactionBackendRecord.setDeleted(true);
-			}
+	// add
+	private void AddNewBookEntryToExistingBookTransaction(BookEntry updatedBookEntry, List<BookEntry> bookEntryList) {
+		if (updatedBookEntry.getBook_entry_id() == 0) {
+			BookEntry bookEntry = new BookEntry();
+			bookEntry.setCredit_amt(updatedBookEntry.getCredit_amt());
+			bookEntry.setDebit_amt(updatedBookEntry.getDebit_amt());
+			bookEntry.setGl_account(updatedBookEntry.getGl_account());
+			bookEntry.setNature(updatedBookEntry.getNature());
+			bookEntry.setDeleted(false);
+			bookEntryList.add(bookEntry);
 		}
-
 	}
 
 	// get single record
